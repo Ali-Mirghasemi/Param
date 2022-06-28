@@ -14,6 +14,7 @@
 				<Compiler>
 					<Add option="-Og" />
 					<Add option="-g" />
+					<Add directory="../../../Str/Src" />
 					<Add directory="../../Src" />
 				</Compiler>
 				<Linker>
@@ -36,15 +37,19 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="../../Src/Param.c">
+		<Unit filename="../../../Str/Src/Str.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../Src/Str.c">
+		<Unit filename="../../Src/Param.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

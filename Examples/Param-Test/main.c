@@ -13,16 +13,16 @@ uint32_t assertResult = 0;
 #define setValue(IDX, TYPE, VAL)    values[IDX].Type = Param_ValueType_ ##TYPE;\
                                     values[IDX].TYPE = VAL
 
-typedef uint32_t Param_Result;
-typedef Param_Result (*Test_Fn)(void);
+typedef uint32_t Test_Result;
+typedef Test_Result (*Test_Fn)(void);
 
-Param_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLine);
-Param_Result Assert_Str(const char* str1, const char* str2, uint16_t line);
-void Result_print(Param_Result result);
+Test_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLine);
+Test_Result Assert_Str(const char* str1, const char* str2, uint16_t line);
+void Result_print(Test_Result result);
 void Param_print(Param* param);
 
-Param_Result Test_1(void);
-Param_Result Test_2(void);
+Test_Result Test_1(void);
+Test_Result Test_2(void);
 
 const Test_Fn Tests[] = {
     Test_1,
@@ -34,7 +34,7 @@ int main()
 {
     int testIndex;
 	int countTestError = 0;
-	Param_Result res;
+	Test_Result res;
 
 	for (testIndex = 0; testIndex < Tests_Len; testIndex++) {
 		PRINTF("---------------- Beginning Test[%d]------------ \r\n", testIndex);
@@ -50,7 +50,7 @@ int main()
 	PRINTF("Tests Errors: %d\r\n", countTestError);
 }
 
-Param_Result Test_1(void) {
+Test_Result Test_1(void) {
     char TEMP1[20];
     char TEMP2[20];
     char TEMP3[20];
@@ -145,7 +145,7 @@ Param_Result Test_1(void) {
     return 0;
 }
 
-Param_Result Test_2(void) {
+Test_Result Test_2(void) {
     char TEMP1[20];
     char TEMP2[20];
     char TEMP3[20];
@@ -253,7 +253,7 @@ Param_Result Test_2(void) {
     return 0;
 }
 
-void Result_print(Param_Result result) {
+void Result_print(Test_Result result) {
     PRINTF("Line: %u, Index: %u\r\n", result >> 16, result & 0xFFFF);
 }
 void Param_print(Param* param) {
@@ -306,7 +306,7 @@ void Param_print(Param* param) {
     PRINTLN("}");
 }
 
-Param_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLine) {
+Test_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLine) {
     Param param;
     Param_Cursor cursor;
     cursor.Index = 0;
@@ -329,7 +329,7 @@ Param_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLi
         return 0;
     }
 }
-Param_Result Assert_Str(const char* str1, const char* str2, uint16_t line) {
+Test_Result Assert_Str(const char* str1, const char* str2, uint16_t line) {
 	if (Str_compare(str1, str2)) {
 		PRINTF("\"%s\"\n", str1);
 		return Str_Error | line << 16;
