@@ -10,16 +10,37 @@
 #define PARAM_DEFAULT_HEX_LEN      (sizeof(PARAM_DEFAULT_HEX) - 1)
 #define PARAM_DEFAULT_BIN_LEN      (sizeof(PARAM_DEFAULT_BIN) - 1)
 
-#if PARAM_CASE_MODE == PARAM_CASE_HIGHER
-    #define __convert(STR, LEN) Str_upperCaseFix((STR), (LEN))
-#elif PARAM_CASE_MODE == PARAM_CASE_LOWER || PARAM_CASE_MODE == PARAM_CASE_INSENSITIVE
-    #define __convert(STR, LEN) Str_lowerCaseFix((STR), (LEN))
-#else
-    #error "PARAM_CASE_MODE not defined"
+#if PARAM_CASE_MODE == PARAM_CASE_INSENSITIVE
+    #define __convert(STR) Str_lowerCase((STR))
+#else 
+    #define __convert(STR) 
 #endif // PARAM_CASE_MODE
 
+/* private functions */
+static Param_Result Param_parseBinary(char* str, Param* param);
+static Param_Result Param_parseHex(char* str, Param* param);
+static Param_Result Param_parseNum(char* str, Param* param);
+static Param_Result Param_parseString(char* str, Param* param);
+static Param_Result Param_parseState(char* str, Param* param);
+static Param_Result Param_parseStateKey(char* str, Param* param);
+static Param_Result Param_parseBoolean(char* str, Param* param);
+static Param_Result Param_parseNull(char* str, Param* param);
+static Param_Result Param_parseUnknown(char* str, Param* param);
 
-
+/**
+ * @brief initialize the parameter cursor
+ * 
+ * @param cursor 
+ * @param ptr 
+ * @param len 
+ * @param paramSeperator 
+ */
+void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeperator) {
+    cursor->Ptr = ptr;
+    cursor->Len = len;
+    cursor->ParamSeperator = paramSeperator;
+    cursor->Index = 0;
+}
 /**
  * @brief parse next param and return
  *
@@ -29,22 +50,35 @@
  */
 Param* Param_next(Param_Cursor* cursor, Param* param) {
     char* pStr = cursor->Ptr;
+    char* paramStr;
     Str_LenType tempLen;
-    uint8_t res = 0;
+    Param_Result res = Param_Error;
     // check cursor is valid
     if (cursor->Ptr == NULL || (*cursor->Ptr == '\0' && cursor->Len == 0)) {
         return NULL;
     }
     // ignore whitspaces
     cursor->Ptr = Str_ignoreWhitespace(cursor->Ptr);
-    tempLen = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= tempLen;
-    pStr = cursor->Ptr;
-    tempLen = cursor->Len;
+    cursor->Len -= (Str_LenType)(cursor->Ptr - pStr);
+    // find end of param
+    paramStr = cursor->Ptr;
+    pStr = Str_indexOf(cursor->Ptr, cursor->ParamSeperator);
+    if (pStr != NULL) {
+        Str_LenType len = (Str_LenType)(pStr - cursor->Ptr);
+        *pStr = '\0';
+        cursor->Ptr = pStr + 1;
+        cursor->Len -= len + 1;
+    }
+    else {
+        cursor->Ptr = NULL;
+        cursor->Len = 0;
+    }
+    // trim right
+    paramStr = Str_trimRight(paramStr);
     // find value type base on first character
-    switch (*cursor->Ptr) {
+    switch (*paramStr) {
         case '0':
-            switch (*(cursor->Ptr + 1)) {
+            switch (*(paramStr + 1)) {
             #if PARAM_CASE_MODE & PARAM_CASE_HIGHER != 0
                 case 'b':
             #endif
@@ -52,7 +86,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
                 case 'B':
             #endif
                     // binary num
-                    res = Param_parseBinary(cursor, param);
+                    res = Param_parseBinary(paramStr, param);
                     break;
             #if PARAM_CASE_MODE & PARAM_CASE_LOWER != 0
                 case 'x':
@@ -61,7 +95,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
                 case 'X':
             #endif
                     // hex num
-                    res = Param_parseHex(cursor, param);
+                    res = Param_parseHex(paramStr, param);
                     break;
             }
         case '1':
@@ -75,8 +109,8 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case '9':
         case '-':
             // check for number or its float
-            if (!res) {
-                res = Param_parseNum(cursor, param);
+            if (res != Param_Ok) {
+                res = Param_parseNum(paramStr, param);
             }
             break;
     #if PARAM_CASE_MODE & PARAM_CASE_LOWER != 0
@@ -88,7 +122,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'F':
     #endif
             // boolean
-            res = Param_parseBoolean(cursor, param);
+            res = Param_parseBoolean(paramStr, param);
             break;
     #if PARAM_CASE_MODE & PARAM_CASE_LOWER != 0
         case 'o':
@@ -97,7 +131,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'O':
     #endif
             // state
-            res = Param_parseStateKey(cursor, param);
+            res = Param_parseStateKey(paramStr, param);
             break;
     #if PARAM_CASE_MODE & PARAM_CASE_LOWER != 0
         case 'l':
@@ -108,11 +142,11 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'H':
     #endif
             // state key
-            res = Param_parseState(cursor, param);
+            res = Param_parseState(paramStr, param);
             break;
         case '"':
             // string
-            res = Param_parseString(cursor, param);
+            res = Param_parseString(paramStr, param);
             break;
     #if PARAM_CASE_MODE & PARAM_CASE_LOWER != 0
         case 'n':
@@ -120,35 +154,15 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
     #if PARAM_CASE_MODE & PARAM_CASE_HIGHER != 0
         case 'N':
     #endif
-            res = Param_parseNull(cursor, param);
+            res = Param_parseNull(paramStr, param);
             break;
-        /*default:
-            // unknown
-            res = Param_parseUnknown(cursor, param);
-            break;*/
     }
     // check if param is not valid
-    if (!res) {
-        cursor->Ptr = pStr;
-        cursor->Len = tempLen;
-        Param_parseUnknown(cursor, param);
-    }
-    else if (param->Value.Type != Param_ValueType_Null) {
-        // find next seperator
-        pStr = Str_indexOf(cursor->Ptr, cursor->ParamSeperator);
-        if (pStr != NULL) {
-            Str_LenType len = (Str_LenType)(pStr - cursor->Ptr);
-            cursor->Ptr = pStr + 1;
-            cursor->Len -= len + 1;
-        }
-        else {
-            cursor->Ptr = NULL;
-            cursor->Len = 0;
-            //param = NULL;
-        }
+    if (res != Param_Ok) {
+        Param_parseUnknown(paramStr, param);
     }
     // return param
-    param->Index = ++cursor->Index;
+    param->Index = cursor->Index++;
     return param;
 }
 /**
@@ -157,17 +171,11 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseBinary(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreNumeric(cursor->Ptr + 2);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
+Param_Result Param_parseBinary(char* str, Param* param) {
     param->Value.Type = Param_ValueType_NumberBinary;
-    return Str_convertUNumFix(pStr + 2, (unsigned int*) &param->Value.NumberBinary, Str_Binary, len - 2) == Str_Ok;
+    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->Value.NumberBinary, Str_Binary);
 }
 /**
  * @brief parse hex strings
@@ -175,17 +183,11 @@ uint8_t Param_parseBinary(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseHex(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreAlphaNumeric(cursor->Ptr + 2);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
+Param_Result Param_parseHex(char* str, Param* param) {
     param->Value.Type = Param_ValueType_NumberHex;
-    return Str_convertUNumFix(pStr + 2, (unsigned int*) &param->Value.NumberHex, Str_Hex, len - 2) == Str_Ok;
+    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->Value.NumberHex, Str_Hex);
 }
 /**
  * @brief parse number strings
@@ -193,32 +195,18 @@ uint8_t Param_parseHex(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseNum(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-
-    if (*cursor->Ptr == '-') {
-        cursor->Ptr++;
-    }
-    cursor->Ptr = Str_ignoreNumeric(cursor->Ptr);
-
-    if (*cursor->Ptr == '.') {
+Param_Result Param_parseNum(char* str, Param* param) {
+    if (Str_indexOf(str, '.') != NULL) {
         // it's float
-        cursor->Ptr = Str_ignoreNumeric(cursor->Ptr + 1);
-        len = (Str_LenType)(cursor->Ptr - pStr);
-        cursor->Len -= len;
-
         param->Value.Type = Param_ValueType_Float;
-        return Str_convertFloatFix(pStr, &param->Value.Float, len) == Str_Ok;
+        return (Param_Result) Str_convertFloat(str, &param->Value.Float);
     }
     else {
         // it's number
-        len = (Str_LenType)(cursor->Ptr - pStr);
-        cursor->Len -= len;
         param->Value.Type = Param_ValueType_Number;
-        return Str_convertNumFix(pStr, (int*) &param->Value.Number, Str_Decimal, len) == Str_Ok;
+        return (Param_Result) Str_convertNum(str, (int*) &param->Value.Number, Str_Decimal);
     }
 }
 /**
@@ -227,23 +215,17 @@ uint8_t Param_parseNum(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseString(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len = Str_fromString(cursor->Ptr) + 2;
-
+Param_Result Param_parseString(char* str, Param* param) {
+    Str_LenType len = Str_fromString(str);
     if (len != -1) {
-        cursor->Ptr += len;
-        cursor->Len -= len;
-
         param->Value.Type = Param_ValueType_String;
-        param->Value.String = pStr;
-
-        return 1;
+        param->Value.String = str;
+        return Param_Ok;
     }
     else {
-        return 0;
+        return Param_Error;
     }
 }
 /**
@@ -252,43 +234,37 @@ uint8_t Param_parseString(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseState(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreAlphabet(cursor->Ptr);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
-    __convert(pStr, len);
+Param_Result Param_parseState(char* str, Param* param) {
+    __convert(str);
     param->Value.Type = Param_ValueType_State;
-    if (len == 4 &&
+    if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "high", len) == 0
+        Str_compare(str, "high") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "HIGH", len) == 0
+        Str_compare(str, "HIGH") == 0
     #else
-        (Str_compareFix(pStr, "high", len) == 0 || Str_compareFix(pStr, "HIGH", len) == 0)
+        Str_compare(str, "high") == 0
     #endif
     ) {
         param->Value.State = 1;
-        return 1;
+        return Param_Ok;
     }
-    else if (len == 3 &&
+    else if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "low", len) == 0
+        Str_compare(str, "low") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "LOW", len) == 0
+        Str_compare(str, "LOW") == 0
     #else
-        (Str_compareFix(pStr, "low", len) == 0 || Str_compareFix(pStr, "LOW", len) == 0)
+        Str_compare(str, "low") == 0
     #endif
     ) {
         param->Value.State = 0;
-        return 1;
+        return Param_Ok;
     }
     else {
-        return 0;
+        return Param_Error;
     }
 }
 /**
@@ -297,43 +273,38 @@ uint8_t Param_parseState(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseStateKey(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreAlphabet(cursor->Ptr);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
-    __convert(pStr, len);
-    param->Value.Type = Param_ValueType_StateKey;
-    if (len == 2 &&
+Param_Result Param_parseStateKey(char* str, Param* param) {
+    __convert(str);
+    if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "on", len) == 0
+        Str_compare(str, "on") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "ON", len) == 0
+        Str_compare(str, "ON") == 0
     #else
-        (Str_compareFix(pStr, "on", len) == 0 || Str_compareFix(pStr, "ON", len) == 0)
+        Str_compare(str, "on") == 0
     #endif
     ) {
+        param->Value.Type = Param_ValueType_StateKey;
         param->Value.StateKey = 1;
-        return 1;
+        return Param_Ok;
     }
-    else if (len == 3 &&
+    else if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "off", len) == 0
+        Str_compare(str, "off") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "OFF", len) == 0
+        Str_compare(str, "OFF") == 0
     #else
-        (Str_compareFix(pStr, "off", len) == 0 || Str_compareFix(pStr, "OFF", len) == 0)
+        Str_compare(str, "off") == 0
     #endif
     ) {
+        param->Value.Type = Param_ValueType_StateKey;
         param->Value.StateKey = 0;
-        return 1;
+        return Param_Ok;
     }
     else {
-        return 0;
+        return Param_Error;
     }
 }
 /**
@@ -342,43 +313,38 @@ uint8_t Param_parseStateKey(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseBoolean(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreAlphabet(cursor->Ptr);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
-    __convert(pStr, len);
-    param->Value.Type = Param_ValueType_Boolean;
-    if (len == 4 &&
+Param_Result Param_parseBoolean(char* str, Param* param) {
+    __convert(str);
+    if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "true", len) == 0
+        Str_compare(str, "true") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "TRUE", len) == 0
+        Str_compare(str, "TRUE") == 0
     #else
-        (Str_compareFix(pStr, "true", len) == 0 || Str_compareFix(pStr, "TRUE", len) == 0)
+        Str_compare(str, "true") == 0
     #endif
     ) {
+        param->Value.Type = Param_ValueType_Boolean;
         param->Value.Boolean = 1;
-        return 1;
+        return Param_Ok;
     }
-    else if (len == 5 &&
+    else if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "false", len) == 0
+        Str_compare(str, "false") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "FALSE", len) == 0
+        Str_compare(str, "FALSE") == 0
     #else
-        (Str_compareFix(pStr, "false", len) == 0 || Str_compareFix(pStr, "FALSE", len) == 0)
+        Str_compare(str, "false") == 0
     #endif
     ) {
+        param->Value.Type = Param_ValueType_Boolean;
         param->Value.Boolean = 0;
-        return 1;
+        return Param_Ok;
     }
     else {
-        return 0;
+        return Param_Error;
     }
 }
 /**
@@ -387,35 +353,25 @@ uint8_t Param_parseBoolean(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseNull(Param_Cursor* cursor, Param* param) {
-    char* pStr = cursor->Ptr;
-    Str_LenType len;
-    cursor->Ptr = Str_ignoreAlphabet(cursor->Ptr);
-    len = (Str_LenType)(cursor->Ptr - pStr);
-    cursor->Len -= len;
-
-    __convert(pStr, len);
-    if (len == 4 &&
+Param_Result Param_parseNull(char* str, Param* param) {
+    __convert(str);
+    if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
-        Str_compareFix(pStr, "null", len) == 0
+        Str_compare(str, "null") == 0
     #elif PARAM_CASE_MODE == PARAM_CASE_HIGHER
-        Str_compareFix(pStr, "NULL", len) == 0
+        Str_compare(str, "NULL") == 0
     #else
-        (Str_compareFix(pStr, "null", len) == 0 || Str_compareFix(pStr, "NULL", len) == 0)
+        Str_compare(str, "null") == 0
     #endif
     ) {
         param->Value.Type = Param_ValueType_Null;
-        param->Value.Null = pStr;
-        if (cursor->Len != 0) {
-            *cursor->Ptr++ = '\0';
-            cursor->Len--;
-        }
-        return 1;
+        param->Value.Null = str;
+        return Param_Ok;
     }
     else {
-        return 0;
+        return Param_Error;
     }
 }
 /**
@@ -423,30 +379,12 @@ uint8_t Param_parseNull(Param_Cursor* cursor, Param* param) {
  *
  * @param cursor
  * @param param
- * @return uint8_t
+ * @return Param_Result
  */
-uint8_t Param_parseUnknown(Param_Cursor* cursor, Param* param) {
-    char* pTemp;
+Param_Result Param_parseUnknown(char* str, Param* param) {
     param->Value.Type = Param_ValueType_Unknown;
-    param->Value.Unknown = cursor->Ptr;
-
-    pTemp = Str_indexOf(cursor->Ptr, cursor->ParamSeperator);
-    if (pTemp) {
-        Str_LenType len;
-        cursor->Ptr = pTemp;
-        len = (Str_LenType)(pTemp - param->Value.Unknown);
-        cursor->Len -= len;
-        if (cursor->Len != 0) {
-            *cursor->Ptr++ = '\0';
-            cursor->Len--;
-        }
-    }
-    else {
-        cursor->Ptr = NULL;
-        cursor->Len = 0;
-    }
-
-    return 1;
+    param->Value.Unknown = str;
+    return Param_Ok;
 }
 /**
  * @brief compare param values, first ValueType and second Value

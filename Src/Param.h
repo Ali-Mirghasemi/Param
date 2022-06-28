@@ -63,6 +63,13 @@ typedef int16_t Param_LenType;
 /********************************************************************************************/
 
 /**
+ * @brief result of parse parameter
+ */
+typedef enum {
+    Param_Ok,
+    Param_Error,
+} Param_Result;
+/**
  * @brief show type of param
  */
 typedef enum {
@@ -112,6 +119,7 @@ typedef struct {
     Param_LenType       Index;
 } Param_Cursor;
 
+void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeperator);
 
 Param* Param_next(Param_Cursor* cursor, Param* param);
 Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char* seperator);
@@ -120,15 +128,6 @@ Str_LenType Param_valueToStr(char* str, Param_Value* value);
 
 char Param_compareValue(Param_Value* a, Param_Value* b);
 
-uint8_t Param_parseBinary(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseHex(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseNum(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseString(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseState(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseStateKey(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseBoolean(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseNull(Param_Cursor* cursor, Param* param);
-uint8_t Param_parseUnknown(Param_Cursor* cursor, Param* param);
 
 #ifdef __cplusplus
 };
