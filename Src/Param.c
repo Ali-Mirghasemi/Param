@@ -51,7 +51,6 @@ void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char par
 Param* Param_next(Param_Cursor* cursor, Param* param) {
     char* pStr = cursor->Ptr;
     char* paramStr;
-    Str_LenType tempLen;
     Param_Result res = Param_Error;
     // check cursor is valid
     if (cursor->Ptr == NULL || (*cursor->Ptr == '\0' && cursor->Len == 0)) {
@@ -491,7 +490,6 @@ Str_LenType Param_valueToStr(char* str, Param_Value* value) {
                 Str_copy(str, PARAM_DEFAULT_LOW);
                 return PARAM_DEFAULT_LOW_LEN;
             }
-            break;
         case Param_ValueType_StateKey:
             if (value->StateKey != 0) {
                 Str_copy(str, PARAM_DEFAULT_ON);
@@ -501,7 +499,6 @@ Str_LenType Param_valueToStr(char* str, Param_Value* value) {
                 Str_copy(str, PARAM_DEFAULT_OFF);
                 return PARAM_DEFAULT_OFF_LEN;
             }
-            break;
         case Param_ValueType_Boolean:
             if (value->Boolean != 0) {
                 Str_copy(str, PARAM_DEFAULT_TRUE);
@@ -511,7 +508,6 @@ Str_LenType Param_valueToStr(char* str, Param_Value* value) {
                 Str_copy(str, PARAM_DEFAULT_FALSE);
                 return PARAM_DEFAULT_FALSE_LEN;
             }
-            break;
         case Param_ValueType_Null:
             Str_copy(str, PARAM_DEFAULT_NULL);
             return PARAM_DEFAULT_NULL_LEN;

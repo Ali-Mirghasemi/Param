@@ -17,7 +17,7 @@ extern "C" {
 
 #define PARAM_VER_MAJOR       0
 #define PARAM_VER_MINOR       1
-#define PARAM_VER_FIX         0
+#define PARAM_VER_FIX         1
 
 #include "Str.h"
 #include <stdint.h>
