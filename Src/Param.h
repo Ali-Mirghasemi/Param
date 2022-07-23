@@ -25,17 +25,53 @@ extern "C" {
 /********************************************************************************************/
 /*                                     Configuration                                        */
 /********************************************************************************************/
-#define PARAM_CASE_LOWER        0x01
-#define PARAM_CASE_HIGHER       0x02
-#define PARAM_CASE_INSENSITIVE  0x03
+#define PARAM_CASE_LOWER                0x01
+#define PARAM_CASE_HIGHER               0x02
+#define PARAM_CASE_INSENSITIVE          0x03
 /**
  * @brief define the case mode of parameter name, just for state, null, stateKey, boolean
  */
-#define PARAM_CASE_MODE         PARAM_CASE_INSENSITIVE
+#define PARAM_CASE_MODE                 PARAM_CASE_LOWER
+/**
+ * @brief enable value type number
+ */
+#define PARAM_TYPE_NUMBER               1
+/**
+ * @brief enable value type number hex
+ */
+#define PARAM_TYPE_NUMBER_HEX           0
+/**
+ * @brief enable value type number hex
+ */
+#define PARAM_TYPE_NUMBER_BINARY        0
+/**
+ * @brief enable value type float
+ */
+#define PARAM_TYPE_FLOAT                0
+/**
+ * @brief enable value type state
+ */
+#define PARAM_TYPE_STATE                0
+/**
+ * @brief enable value type state
+ */
+#define PARAM_TYPE_STATE_KEY            0
+/**
+ * @brief enable value type boolean
+ */
+#define PARAM_TYPE_BOOLEAN              0
+/**
+ * @brief enable value type string
+ */
+#define PARAM_TYPE_STRING               0
+/**
+ * @brief enable value type null
+ */
+#define PARAM_TYPE_NULL                 0
 /**
  * @brief define toStr decimal length, 0 means all digits
  */
-#define PARAM_FLOAT_DECIMAL_LEN 0
+#define PARAM_FLOAT_DECIMAL_LEN         0
 /**
  * @brief This macro help you to define the maximum number of parameters.
  */
@@ -43,22 +79,22 @@ typedef int16_t Param_LenType;
 /**
  * @brief if enable this param, Param_compareValue check teh value of Null
  */
-#define PARAM_COMPARE_NULL_VAL      0
+#define PARAM_COMPARE_NULL_VAL          0
 /**
  * @brief if enable this param, Param_compareValue check teh value of Unknown
  */
-#define PARAM_COMPARE_UNKNOWN_VAL   0
+#define PARAM_COMPARE_UNKNOWN_VAL       0
 
 /* Default Values for toStr */
-#define PARAM_DEFAULT_NULL          "Null"
-#define PARAM_DEFAULT_TRUE          "True"
-#define PARAM_DEFAULT_FALSE         "False"
-#define PARAM_DEFAULT_OFF           "Off"
-#define PARAM_DEFAULT_ON            "On"
-#define PARAM_DEFAULT_HIGH          "High"
-#define PARAM_DEFAULT_LOW           "Low"
-#define PARAM_DEFAULT_HEX           "0x"
-#define PARAM_DEFAULT_BIN           "0b"
+#define PARAM_DEFAULT_NULL              "Null"
+#define PARAM_DEFAULT_TRUE              "True"
+#define PARAM_DEFAULT_FALSE             "False"
+#define PARAM_DEFAULT_OFF               "Off"
+#define PARAM_DEFAULT_ON                "On"
+#define PARAM_DEFAULT_HIGH              "High"
+#define PARAM_DEFAULT_LOW               "Low"
+#define PARAM_DEFAULT_HEX               "0x"
+#define PARAM_DEFAULT_BIN               "0b"
 
 /********************************************************************************************/
 
