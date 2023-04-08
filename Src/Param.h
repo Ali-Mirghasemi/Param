@@ -39,35 +39,35 @@ extern "C" {
 /**
  * @brief enable value type number hex
  */
-#define PARAM_TYPE_NUMBER_HEX           0
+#define PARAM_TYPE_NUMBER_HEX           1
 /**
  * @brief enable value type number hex
  */
-#define PARAM_TYPE_NUMBER_BINARY        0
+#define PARAM_TYPE_NUMBER_BINARY        1
 /**
  * @brief enable value type float
  */
-#define PARAM_TYPE_FLOAT                0
+#define PARAM_TYPE_FLOAT                1
 /**
  * @brief enable value type state
  */
-#define PARAM_TYPE_STATE                0
+#define PARAM_TYPE_STATE                1
 /**
  * @brief enable value type state
  */
-#define PARAM_TYPE_STATE_KEY            0
+#define PARAM_TYPE_STATE_KEY            1
 /**
  * @brief enable value type boolean
  */
-#define PARAM_TYPE_BOOLEAN              0
+#define PARAM_TYPE_BOOLEAN              1
 /**
  * @brief enable value type string
  */
-#define PARAM_TYPE_STRING               0
+#define PARAM_TYPE_STRING               1
 /**
  * @brief enable value type null
  */
-#define PARAM_TYPE_NULL                 0
+#define PARAM_TYPE_NULL                 1
 /**
  * @brief define toStr decimal length, 0 means all digits
  */
