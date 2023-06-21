@@ -89,7 +89,9 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         cursor->Len = 0;
     }
     // trim right
-    paramStr = Str_trimRight(paramStr);
+    if(*paramStr){
+        paramStr = Str_trimRight(paramStr);
+    }
     // find value type base on first character
     switch (*paramStr) {
     #if PARAM_TYPE_NUMBER
