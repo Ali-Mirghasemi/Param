@@ -31,7 +31,7 @@ extern "C" {
 /**
  * @brief define the case mode of parameter name, just for state, null, stateKey, boolean
  */
-#define PARAM_CASE_MODE                 PARAM_CASE_LOWER
+#define PARAM_CASE_MODE                 PARAM_CASE_INSENSITIVE
 /**
  * @brief enable value type number
  */
