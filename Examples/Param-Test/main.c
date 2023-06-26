@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Ali Mirghasemi (ali.mirghasemi1376@gmail.com)
+ * @brief This file test all of Param library functions, remember you must enable all features
+ * @version 0.1
+ * @date 2023-06-26
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #include <stdio.h>
 
 #include "Param.h"
