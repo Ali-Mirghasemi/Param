@@ -49,12 +49,12 @@ static Param_Result Param_parseUnknown(char* str, Param* param);
  * @param cursor 
  * @param ptr 
  * @param len 
- * @param paramSeperator 
+ * @param paramSeparator 
  */
-void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeperator) {
+void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeparator) {
     cursor->Ptr = ptr;
     cursor->Len = len;
-    cursor->ParamSeperator = paramSeperator;
+    cursor->ParamSeparator = paramSeparator;
     cursor->Index = 0;
 }
 /**
@@ -77,7 +77,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
     cursor->Len -= (Str_LenType)(cursor->Ptr - pStr);
     // find end of param
     paramStr = cursor->Ptr;
-    pStr = Str_indexOf(cursor->Ptr, cursor->ParamSeperator);
+    pStr = Str_indexOf(cursor->Ptr, cursor->ParamSeparator);
     if (pStr != NULL) {
         Str_LenType len = (Str_LenType)(pStr - cursor->Ptr);
         *pStr = '\0';
@@ -487,18 +487,18 @@ char Param_compareValue(Param_Value* a, Param_Value* b) {
  * @param str
  * @param values
  * @param len
- * @param seperator
+ * @param separator
  * @return Str_LenType
  */
-Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char* seperator) {
+Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char* separator) {
     char* base = str;
-    Str_LenType sepLen = Str_len(seperator);
+    Str_LenType sepLen = Str_len(separator);
     while (--len > 0) {
         // convert value
         str += Param_valueToStr(str, values++);
-        // add seperator
-        if (seperator) {
-            Str_copy(str, seperator);
+        // add separator
+        if (separator) {
+            Str_copy(str, separator);
             str += sepLen;
         }
     }

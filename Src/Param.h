@@ -112,7 +112,7 @@ typedef enum {
   Param_ValueType_Unknown,        /**< first character of value not match with anyone of supported values */
   Param_ValueType_Number,         /**< ex: 13 */
   Param_ValueType_NumberHex,      /**< ex: 0xAB25 */
-  Param_ValueType_NumberBinary,   /**< ex: 0b64813 */
+  Param_ValueType_NumberBinary,   /**< ex: 0b01100101 */
   Param_ValueType_Float,          /**< ex: 2.54 */
   Param_ValueType_State,          /**< (high, low), ex: high */
   Param_ValueType_StateKey,       /**< (on, off), ex: off */
@@ -151,14 +151,14 @@ typedef struct {
 typedef struct {
     char*               Ptr;
     Str_LenType         Len;
-    char                ParamSeperator;
+    char                ParamSeparator;
     Param_LenType       Index;
 } Param_Cursor;
 
-void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeperator);
+void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char paramSeparator);
 
 Param* Param_next(Param_Cursor* cursor, Param* param);
-Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char* seperator);
+Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char* separator);
 
 Str_LenType Param_valueToStr(char* str, Param_Value* value);
 

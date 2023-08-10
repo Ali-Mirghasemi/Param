@@ -321,7 +321,7 @@ Test_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLin
     Param_Cursor cursor;
     cursor.Index = 0;
     cursor.Len = Str_len(buff);
-    cursor.ParamSeperator = ',';
+    cursor.ParamSeparator = ',';
     cursor.Ptr = buff;
 
     while (Param_next(&cursor, &param)) {
