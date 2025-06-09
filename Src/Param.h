@@ -98,6 +98,8 @@ typedef int16_t Param_LenType;
 
 /********************************************************************************************/
 
+#include "ParamMacro.h"
+
 /**
  * @brief result of parse parameter
  */
@@ -125,16 +127,16 @@ typedef enum {
  */
 typedef struct {
     union {
-        char*           Unknown;
-        int32_t         Number;
-        uint32_t        NumberHex;
-        uint32_t        NumberBinary;
-        float           Float;
-        uint8_t         State;
-        uint8_t         StateKey;
-        uint8_t         Boolean;
-        char*           String;
-        char*           Null;
+        PARAM_VALUETYPE(Unknown)        Unknown;
+        PARAM_VALUETYPE(Number)         Number;
+        PARAM_VALUETYPE(NumberHex)      NumberHex;
+        PARAM_VALUETYPE(NumberBinary)   NumberBinary;
+        PARAM_VALUETYPE(Float)          Float;
+        PARAM_VALUETYPE(State)          State;
+        PARAM_VALUETYPE(StateKey)       StateKey;
+        PARAM_VALUETYPE(Boolean)        Boolean;
+        PARAM_VALUETYPE(String)         String;
+        PARAM_VALUETYPE(Null)           Null;
     };
     Param_ValueType     Type;
 } Param_Value;
@@ -163,6 +165,35 @@ Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char*
 Str_LenType Param_valueToStr(char* str, Param_Value* value);
 
 char Param_compareValue(Param_Value* a, Param_Value* b);
+
+// ------------------------------------ Helper Functions --------------------------------------
+Param_Result Param_parse(char* str, Param_Value* param);
+#if PARAM_TYPE_NUMBER_BINARY
+    Param_Result Param_parseBinary(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_NUMBER_HEX
+    Param_Result Param_parseHex(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_NUMBER
+    Param_Result Param_parseNum(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_STRING
+    Param_Result Param_parseString(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_STATE
+    Param_Result Param_parseState(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_STATE_KEY
+    Param_Result Param_parseStateKey(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_BOOLEAN
+    Param_Result Param_parseBoolean(char* str, Param_Value* param);
+#endif
+#if PARAM_TYPE_NULL
+    Param_Result Param_parseNull(char* str, Param_Value* param);
+#endif
+Param_Result Param_parseUnknown(char* str, Param_Value* param);
+
 
 
 #ifdef __cplusplus

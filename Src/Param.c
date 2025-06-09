@@ -16,33 +16,6 @@
     #define __convert(STR) 
 #endif // PARAM_CASE_MODE
 
-/* private functions */
-#if PARAM_TYPE_NUMBER_BINARY
-    static Param_Result Param_parseBinary(char* str, Param* param);
-#endif
-#if PARAM_TYPE_NUMBER_HEX
-    static Param_Result Param_parseHex(char* str, Param* param);
-#endif
-#if PARAM_TYPE_NUMBER
-    static Param_Result Param_parseNum(char* str, Param* param);
-#endif
-#if PARAM_TYPE_STRING
-    static Param_Result Param_parseString(char* str, Param* param);
-#endif
-#if PARAM_TYPE_STATE
-    static Param_Result Param_parseState(char* str, Param* param);
-#endif
-#if PARAM_TYPE_STATE_KEY
-    static Param_Result Param_parseStateKey(char* str, Param* param);
-#endif
-#if PARAM_TYPE_BOOLEAN
-    static Param_Result Param_parseBoolean(char* str, Param* param);
-#endif
-#if PARAM_TYPE_NULL
-    static Param_Result Param_parseNull(char* str, Param* param);
-#endif
-static Param_Result Param_parseUnknown(char* str, Param* param);
-
 /**
  * @brief initialize the parameter cursor
  * 
@@ -67,7 +40,6 @@ void Param_initCursor(Param_Cursor* cursor, char* ptr, Str_LenType len, char par
 Param* Param_next(Param_Cursor* cursor, Param* param) {
     char* pStr = cursor->Ptr;
     char* paramStr;
-    Param_Result res = Param_Error;
     // check cursor is valid
     if (cursor->Ptr == NULL || (*cursor->Ptr == '\0' && cursor->Len == 0)) {
         return NULL;
@@ -93,11 +65,26 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         paramStr = Str_trimRight(paramStr);
     }
     // find value type base on first character
-    switch (*paramStr) {
+    Param_parse(paramStr, &param->Value);
+    // return param
+    param->Index = cursor->Index++;
+    return param;
+}
+/**
+ * @brief Parse a string into param object
+ * 
+ * @param str 
+ * @param param 
+ * @return Param_Result 
+ */
+Param_Result Param_parse(char* str, Param_Value* param) {
+    Param_Result res = Param_Error;
+
+    switch (*str) {
     #if PARAM_TYPE_NUMBER
         case '0':
         #if PARAM_TYPE_NUMBER_BINARY || PARAM_TYPE_NUMBER_HEX
-            switch (*(paramStr + 1)) {
+            switch (*(str + 1)) {
             #if PARAM_TYPE_NUMBER_BINARY
             #if PARAM_CASE_MODE & PARAM_CASE_HIGHER != 0
                 case 'b':
@@ -106,7 +93,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
                 case 'B':
             #endif
                     // binary num
-                    res = Param_parseBinary(paramStr, param);
+                    res = Param_parseBinary(str, param);
                     break;
             #endif // PARAM_TYPE_NUMBER_BINARY
             #if PARAM_TYPE_NUMBER_HEX
@@ -117,7 +104,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
                 case 'X':
             #endif
                     // hex num
-                    res = Param_parseHex(paramStr, param);
+                    res = Param_parseHex(str, param);
                     break;
             #endif // PARAM_TYPE_NUMBER_HEX
             }
@@ -134,7 +121,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case '-':
             // check for number or its float
             if (res != Param_Ok) {
-                res = Param_parseNum(paramStr, param);
+                res = Param_parseNum(str, param);
             }
             break;
     #endif // PARAM_TYPE_NUMBER
@@ -148,7 +135,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'F':
     #endif
             // boolean
-            res = Param_parseBoolean(paramStr, param);
+            res = Param_parseBoolean(str, param);
             break;
     #endif // PARAM_TYPE_BOOLEAN
     #if PARAM_TYPE_STATE
@@ -159,7 +146,7 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'O':
     #endif
             // state
-            res = Param_parseStateKey(paramStr, param);
+            res = Param_parseStateKey(str, param);
             break;
     #endif // PARAM_TYPE_STATE
     #if PARAM_TYPE_STATE_KEY
@@ -172,13 +159,13 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
         case 'H':
     #endif
             // state key
-            res = Param_parseState(paramStr, param);
+            res = Param_parseState(str, param);
             break;
     #endif // PARAM_TYPE_STATE_KEY
     #if PARAM_TYPE_STRING
         case '"':
             // string
-            res = Param_parseString(paramStr, param);
+            res = Param_parseString(str, param);
             break;
     #endif // PARAM_TYPE_STRING
     #if PARAM_TYPE_NULL
@@ -188,17 +175,17 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
     #if PARAM_CASE_MODE & PARAM_CASE_HIGHER != 0
         case 'N':
     #endif
-            res = Param_parseNull(paramStr, param);
+            res = Param_parseNull(str, param);
             break;
     #endif // PARAM_TYPE_NULL
     }
+
     // check if param is not valid
     if (res != Param_Ok) {
-        Param_parseUnknown(paramStr, param);
+        Param_parseUnknown(str, param);
     }
-    // return param
-    param->Index = cursor->Index++;
-    return param;
+
+    return res;
 }
 #if PARAM_TYPE_NUMBER_BINARY
 /**
@@ -209,9 +196,9 @@ Param* Param_next(Param_Cursor* cursor, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseBinary(char* str, Param* param) {
-    param->Value.Type = Param_ValueType_NumberBinary;
-    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->Value.NumberBinary, Str_Binary);
+Param_Result Param_parseBinary(char* str, Param_Value* param) {
+    param->Type = Param_ValueType_NumberBinary;
+    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->NumberBinary, Str_Binary);
 }
 #endif // PARAM_TYPE_NUMBER_BINARY
 #if PARAM_TYPE_NUMBER_HEX
@@ -223,9 +210,9 @@ Param_Result Param_parseBinary(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseHex(char* str, Param* param) {
-    param->Value.Type = Param_ValueType_NumberHex;
-    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->Value.NumberHex, Str_Hex);
+Param_Result Param_parseHex(char* str, Param_Value* param) {
+    param->Type = Param_ValueType_NumberHex;
+    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->NumberHex, Str_Hex);
 }
 #endif // PARAM_TYPE_NUMBER_HEX
 #if PARAM_TYPE_NUMBER
@@ -237,16 +224,16 @@ Param_Result Param_parseHex(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseNum(char* str, Param* param) {
+Param_Result Param_parseNum(char* str, Param_Value* param) {
     if (Str_indexOf(str, '.') != NULL) {
         // it's float
-        param->Value.Type = Param_ValueType_Float;
-        return (Param_Result) Str_convertFloat(str, &param->Value.Float);
+        param->Type = Param_ValueType_Float;
+        return (Param_Result) Str_convertFloat(str, &param->Float);
     }
     else {
         // it's number
-        param->Value.Type = Param_ValueType_Number;
-        return (Param_Result) Str_convertNum(str, (int*) &param->Value.Number, Str_Decimal);
+        param->Type = Param_ValueType_Number;
+        return (Param_Result) Str_convertNum(str, (int*) &param->Number, Str_Decimal);
     }
 }
 #endif // PARAM_TYPE_NUMBER
@@ -259,11 +246,11 @@ Param_Result Param_parseNum(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseString(char* str, Param* param) {
+Param_Result Param_parseString(char* str, Param_Value* param) {
     Str_LenType len = Str_fromString(str);
     if (len != -1) {
-        param->Value.Type = Param_ValueType_String;
-        param->Value.String = str;
+        param->Type = Param_ValueType_String;
+        param->String = str;
         return Param_Ok;
     }
     else {
@@ -280,9 +267,9 @@ Param_Result Param_parseString(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseState(char* str, Param* param) {
+Param_Result Param_parseState(char* str, Param_Value* param) {
     __convert(str);
-    param->Value.Type = Param_ValueType_State;
+    param->Type = Param_ValueType_State;
     if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
         Str_compare(str, "high") == 0
@@ -292,7 +279,7 @@ Param_Result Param_parseState(char* str, Param* param) {
         Str_compare(str, "high") == 0
     #endif
     ) {
-        param->Value.State = 1;
+        param->State = 1;
         return Param_Ok;
     }
     else if (
@@ -304,7 +291,7 @@ Param_Result Param_parseState(char* str, Param* param) {
         Str_compare(str, "low") == 0
     #endif
     ) {
-        param->Value.State = 0;
+        param->State = 0;
         return Param_Ok;
     }
     else {
@@ -321,7 +308,7 @@ Param_Result Param_parseState(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseStateKey(char* str, Param* param) {
+Param_Result Param_parseStateKey(char* str, Param_Value* param) {
     __convert(str);
     if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
@@ -332,8 +319,8 @@ Param_Result Param_parseStateKey(char* str, Param* param) {
         Str_compare(str, "on") == 0
     #endif
     ) {
-        param->Value.Type = Param_ValueType_StateKey;
-        param->Value.StateKey = 1;
+        param->Type = Param_ValueType_StateKey;
+        param->StateKey = 1;
         return Param_Ok;
     }
     else if (
@@ -345,8 +332,8 @@ Param_Result Param_parseStateKey(char* str, Param* param) {
         Str_compare(str, "off") == 0
     #endif
     ) {
-        param->Value.Type = Param_ValueType_StateKey;
-        param->Value.StateKey = 0;
+        param->Type = Param_ValueType_StateKey;
+        param->StateKey = 0;
         return Param_Ok;
     }
     else {
@@ -363,7 +350,7 @@ Param_Result Param_parseStateKey(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseBoolean(char* str, Param* param) {
+Param_Result Param_parseBoolean(char* str, Param_Value* param) {
     __convert(str);
     if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
@@ -374,8 +361,8 @@ Param_Result Param_parseBoolean(char* str, Param* param) {
         Str_compare(str, "true") == 0
     #endif
     ) {
-        param->Value.Type = Param_ValueType_Boolean;
-        param->Value.Boolean = 1;
+        param->Type = Param_ValueType_Boolean;
+        param->Boolean = 1;
         return Param_Ok;
     }
     else if (
@@ -387,8 +374,8 @@ Param_Result Param_parseBoolean(char* str, Param* param) {
         Str_compare(str, "false") == 0
     #endif
     ) {
-        param->Value.Type = Param_ValueType_Boolean;
-        param->Value.Boolean = 0;
+        param->Type = Param_ValueType_Boolean;
+        param->Boolean = 0;
         return Param_Ok;
     }
     else {
@@ -405,7 +392,7 @@ Param_Result Param_parseBoolean(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseNull(char* str, Param* param) {
+Param_Result Param_parseNull(char* str, Param_Value* param) {
     __convert(str);
     if (
     #if PARAM_CASE_MODE == PARAM_CASE_LOWER
@@ -416,8 +403,8 @@ Param_Result Param_parseNull(char* str, Param* param) {
         Str_compare(str, "null") == 0
     #endif
     ) {
-        param->Value.Type = Param_ValueType_Null;
-        param->Value.Null = str;
+        param->Type = Param_ValueType_Null;
+        param->Null = str;
         return Param_Ok;
     }
     else {
@@ -432,9 +419,9 @@ Param_Result Param_parseNull(char* str, Param* param) {
  * @param param
  * @return Param_Result
  */
-Param_Result Param_parseUnknown(char* str, Param* param) {
-    param->Value.Type = Param_ValueType_Unknown;
-    param->Value.Unknown = str;
+Param_Result Param_parseUnknown(char* str, Param_Value* param) {
+    param->Type = Param_ValueType_Unknown;
+    param->Unknown = str;
     return Param_Ok;
 }
 /**
