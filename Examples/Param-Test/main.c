@@ -54,7 +54,7 @@ int main()
 			Result_print(res);
 			countTestError++;
 		}
-		PRINTF("---------------------------------------------- \r\n", testIndex);
+		PRINTF("---------------------------------------------- \r\n");
 	}
 	PRINTLN("Test Done\r\n");
 	PRINTF("Tests Errors: %d\r\n", countTestError);
