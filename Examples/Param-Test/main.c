@@ -260,60 +260,95 @@ Test_Result Test_2(void) {
     setValue(1, Unknown, TEMP2);
     assert(Param, BUFF, values, 2);
 
+    Str_copy(BUFF, "12u, 13u8, 14f, 15i32, 2.45f32");
+    setValue(0, UNumber, 12);
+    setValue(1, UInt8, 13);
+    setValue(2, Float, 14);
+    setValue(3, Int32, 15);
+    setValue(4, Float, 2.45);
+    assert(Param, BUFF, values, 4);
+
     return 0;
 }
 
 void Result_print(Test_Result result) {
     PRINTF("Line: %u, Index: %u\r\n", result >> 16, result & 0xFFFF);
 }
+void Param_printValue(Param_Value* val) {
+#define __printValue(NAME, T) \
+case Param_ValueType_ ##NAME: \
+    printf(T, val->NAME); \
+    break
+
+    switch (val->Type) {
+        __printValue(Unknown, "\"%s\"");
+        __printValue(Null, "\"%s\"");
+    #if PARAM_TYPE_64BIT
+        __printValue(Number, "%ld");
+        __printValue(UNumber, "%lu");
+        __printValue(NumberHex, "%lX");
+        __printValue(NumberBinary, "%lX");
+    #else
+        __printValue(Number, "%d");
+        __printValue(UNumber, "%u");
+        __printValue(NumberHex, "%X");
+        __printValue(NumberBinary, "%X");
+    #endif
+        __printValue(UInt8, "%u");
+        __printValue(Int8, "%d");
+        __printValue(UInt16, "%u");
+        __printValue(Int16, "%d");
+        __printValue(UInt32, "%u");
+        __printValue(Int32, "%d");
+    #if PARAM_TYPE_64BIT
+        __printValue(UInt64, "%lu");
+        __printValue(Int64, "%ld");
+    #endif
+        __printValue(Float, "%g");
+    #if PARAM_TYPE_64BIT
+        __printValue(Double, "%g");
+    #endif
+        case Param_ValueType_State:
+            PRINTF("%s", val->State ? "HIGH" : "LOW");
+            break;
+        case Param_ValueType_StateKey:
+            PRINTF("%s", val->StateKey ? "ON" : "OFF");
+            break;
+        case Param_ValueType_Boolean:
+            PRINTF("%s", val->Boolean ? "true" : "false");
+            break;
+        __printValue(String, "\"%s\"");
+    }
+}
 void Param_print(Param* param) {
+#define __TYPE_NAME(NAME)           [Param_ValueType_ ##NAME] = #NAME
+
     static const char* TYPES[] = {
-        "Unknown",
-        "Number",
-        "NumberHex",
-        "NumberBinary",
-        "Float",
-        "State",
-        "StateKey",
-        "Boolean",
-        "String",
-        "Null",
+        __TYPE_NAME(Unknown),
+        __TYPE_NAME(Null),
+        __TYPE_NAME(Number),
+        __TYPE_NAME(UNumber),
+        __TYPE_NAME(NumberHex),
+        __TYPE_NAME(NumberBinary),
+        __TYPE_NAME(UInt8),
+        __TYPE_NAME(Int8),
+        __TYPE_NAME(UInt16),
+        __TYPE_NAME(Int16),
+        __TYPE_NAME(UInt32),
+        __TYPE_NAME(Int32),
+        __TYPE_NAME(UInt64),
+        __TYPE_NAME(Int64),
+        __TYPE_NAME(Float),
+        __TYPE_NAME(Double),
+        __TYPE_NAME(State),
+        __TYPE_NAME(StateKey),
+        __TYPE_NAME(Boolean),
+        __TYPE_NAME(String),
     };
 
     PRINTF("{%u, %s, ", param->Index, TYPES[(int) param->Value.Type]);
-    switch (param->Value.Type) {
-        case Param_ValueType_Unknown:
-            PRINTF("\"%s\"", param->Value.Unknown);
-            break;
-        case Param_ValueType_Number:
-            PRINTF("%d", param->Value.Number);
-            break;
-        case Param_ValueType_NumberHex:
-            PRINTF("%X", param->Value.NumberHex);
-            break;
-        case Param_ValueType_NumberBinary:
-            PRINTF("%u", param->Value.NumberBinary);
-            break;
-        case Param_ValueType_Float:
-            PRINTF("%g", param->Value.Float);
-            break;
-        case Param_ValueType_State:
-            PRINTF("%s", param->Value.State ? "HIGH" : "LOW");
-            break;
-        case Param_ValueType_StateKey:
-            PRINTF("%s", param->Value.StateKey ? "ON" : "OFF");
-            break;
-        case Param_ValueType_Boolean:
-            PRINTF("%s", param->Value.Boolean ? "true" : "false");
-            break;
-        case Param_ValueType_String:
-            PRINTF("\"%s\"", param->Value.String);
-            break;
-        case Param_ValueType_Null:
-            PRINTF("\"%s\"", param->Value.Null);
-            break;
-    }
-    PRINTLN("}");
+    Param_printValue(&param->Value);
+    PRINTF("}");
 }
 
 Test_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLine) {
@@ -326,7 +361,11 @@ Test_Result Assert_Param(char* buff, Param_Value* values, int len, uint16_t cLin
 
     while (Param_next(&cursor, &param)) {
         if (Param_compareValue(&param.Value, values) == 0) {
+            PRINTF("Expected: ");
+            Param_printValue(values);
+            PRINTF(", Found: ");
             Param_print(&param);
+            PRINTLN("");
             return cLine << 16 | param.Index;
         }
         values++;
