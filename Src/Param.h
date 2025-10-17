@@ -69,6 +69,10 @@ extern "C" {
  */
 #define PARAM_TYPE_NULL                 1
 /**
+ * @brief enable 64bit variables
+ */
+#define PARAM_TYPE_64BIT                1
+/**
  * @brief define toStr decimal length, 0 means all digits
  */
 #define PARAM_FLOAT_DECIMAL_LEN         0
@@ -84,6 +88,16 @@ typedef int16_t Param_LenType;
  * @brief if enable this param, Param_compareValue check teh value of Unknown
  */
 #define PARAM_COMPARE_UNKNOWN_VAL       0
+/**
+ * System byte order
+ */
+#define PARAM_SYSTEM_BYTE_ORDER_LE      0       /**< Little-Endian */
+#define PARAM_SYSTEM_BYTE_ORDER_BE      1       /**< Big-Endian */
+#define PARAM_SYSTEM_BYTE_ORDER_AU      2       /**< Auto Detect, if can't find use LE */
+/**
+ * @brief Defien param system byte order
+ */
+#define PARAM_SYSTEM_BYTE_ORDER         PARAM_SYSTEM_BYTE_ORDER_AU
 
 /* Default Values for toStr */
 #define PARAM_DEFAULT_NULL              "Null"
@@ -97,6 +111,20 @@ typedef int16_t Param_LenType;
 #define PARAM_DEFAULT_BIN               "0b"
 
 /********************************************************************************************/
+/**
+ * Number default type
+ */
+#if PARAM_TYPE_64BIT
+    typedef int64_t         Param_Number;
+    typedef uint64_t        Param_UNumber;
+    typedef uint64_t        Param_NumberHex;
+    typedef uint64_t        Param_NumberBin;
+#else
+    typedef int32_t         Param_Number;
+    typedef uint32_t        Param_UNumber;
+    typedef uint32_t        Param_NumberHex;
+    typedef uint32_t        Param_NumberBin;
+#endif
 
 #include "ParamMacro.h"
 
@@ -111,32 +139,60 @@ typedef enum {
  * @brief show type of param
  */
 typedef enum {
-  Param_ValueType_Unknown,        /**< first character of value not match with anyone of supported values */
-  Param_ValueType_Number,         /**< ex: 13 */
-  Param_ValueType_NumberHex,      /**< ex: 0xAB25 */
-  Param_ValueType_NumberBinary,   /**< ex: 0b01100101 */
-  Param_ValueType_Float,          /**< ex: 2.54 */
-  Param_ValueType_State,          /**< (high, low), ex: high */
-  Param_ValueType_StateKey,       /**< (on, off), ex: off */
-  Param_ValueType_Boolean,        /**< (true, false), ex: true */
-  Param_ValueType_String,         /**< ex: "Text" */
-  Param_ValueType_Null,           /**< ex: null */
+    Param_ValueType_Unknown         = 0xFF, /**< first character of value not match with any of supported values */
+    Param_ValueType_Null            = 0xFE, /**< ex: null */
+    Param_ValueType_Number          = 0x00, /**< ex: 13 */
+    Param_ValueType_UNumber,                /**< ex: 13u */
+    Param_ValueType_NumberHex,              /**< ex: 0xAB25 */
+    Param_ValueType_NumberBinary,           /**< ex: 0b01100101 */
+    Param_ValueType_UInt8,                  /**< ex: 125u8 */
+    Param_ValueType_Int8,                   /**< ex: 125i8 */
+    Param_ValueType_UInt16,                 /**< ex: 125u16 */
+    Param_ValueType_Int16,                  /**< ex: 125i8 */
+    Param_ValueType_UInt32,                 /**< ex: 125u32 */
+    Param_ValueType_Int32,                  /**< ex: 125i32 */
+#if PARAM_TYPE_64BIT
+    Param_ValueType_UInt64,                 /**< ex: 125u64 */
+    Param_ValueType_Int64,                  /**< ex: 125i64 */
+#endif
+    Param_ValueType_Float           = 0x10, /**< ex: 2.54f or 2.54 if 64bit variables disabled */
+#if PARAM_TYPE_64BIT
+    Param_ValueType_Double,                 /**< ex: 2.54 */
+#endif
+    Param_ValueType_State           = 0x20, /**< (high, low), ex: high */
+    Param_ValueType_StateKey,               /**< (on, off), ex: off */
+    Param_ValueType_Boolean,                /**< (true, false), ex: true */
+    Param_ValueType_String          = 0x30, /**< ex: "Text" */
 } Param_ValueType;
 /**
  * @brief hold type of param in same memory
  */
 typedef struct {
     union {
-        PARAM_VALUETYPE(Unknown)        Unknown;
-        PARAM_VALUETYPE(Number)         Number;
-        PARAM_VALUETYPE(NumberHex)      NumberHex;
-        PARAM_VALUETYPE(NumberBinary)   NumberBinary;
-        PARAM_VALUETYPE(Float)          Float;
-        PARAM_VALUETYPE(State)          State;
-        PARAM_VALUETYPE(StateKey)       StateKey;
-        PARAM_VALUETYPE(Boolean)        Boolean;
-        PARAM_VALUETYPE(String)         String;
-        PARAM_VALUETYPE(Null)           Null;
+        PARAM_IMPL_VALUETYPE(Unknown);
+        PARAM_IMPL_VALUETYPE(Null);
+        PARAM_IMPL_VALUETYPE(Number);
+        PARAM_IMPL_VALUETYPE(UNumber);
+        PARAM_IMPL_VALUETYPE(NumberHex);
+        PARAM_IMPL_VALUETYPE(NumberBinary);
+        PARAM_IMPL_VALUETYPE(UInt8);
+        PARAM_IMPL_VALUETYPE(Int8);
+        PARAM_IMPL_VALUETYPE(UInt16);
+        PARAM_IMPL_VALUETYPE(Int16);
+        PARAM_IMPL_VALUETYPE(UInt32);
+        PARAM_IMPL_VALUETYPE(Int32);
+    #if PARAM_TYPE_64BIT
+        PARAM_IMPL_VALUETYPE(UInt64);
+        PARAM_IMPL_VALUETYPE(Int64);
+    #endif
+        PARAM_IMPL_VALUETYPE(Float);
+    #if PARAM_TYPE_64BIT
+        PARAM_IMPL_VALUETYPE(Double);
+    #endif
+        PARAM_IMPL_VALUETYPE(State);
+        PARAM_IMPL_VALUETYPE(StateKey);
+        PARAM_IMPL_VALUETYPE(Boolean);
+        PARAM_IMPL_VALUETYPE(String);
     };
     Param_ValueType     Type;
 } Param_Value;

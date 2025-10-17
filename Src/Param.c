@@ -198,7 +198,11 @@ Param_Result Param_parse(char* str, Param_Value* param) {
  */
 Param_Result Param_parseBinary(char* str, Param_Value* param) {
     param->Type = Param_ValueType_NumberBinary;
-    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->NumberBinary, Str_Binary);
+#if PARAM_TYPE_64BIT
+    return (Param_Result) Str_convertULong(str + 2, &param->NumberBinary, Str_Binary);
+#else
+    return (Param_Result) Str_convertUNum(str + 2, &param->NumberBinary, Str_Binary);
+#endif
 }
 #endif // PARAM_TYPE_NUMBER_BINARY
 #if PARAM_TYPE_NUMBER_HEX
@@ -212,7 +216,11 @@ Param_Result Param_parseBinary(char* str, Param_Value* param) {
  */
 Param_Result Param_parseHex(char* str, Param_Value* param) {
     param->Type = Param_ValueType_NumberHex;
-    return (Param_Result) Str_convertUNum(str + 2, (unsigned int*) &param->NumberHex, Str_Hex);
+#if PARAM_TYPE_64BIT
+    return (Param_Result) Str_convertULong(str + 2, &param->NumberHex, Str_Hex);
+#else
+    return (Param_Result) Str_convertUNum(str + 2, &param->NumberHex, Str_Hex);
+#endif
 }
 #endif // PARAM_TYPE_NUMBER_HEX
 #if PARAM_TYPE_NUMBER
@@ -225,15 +233,100 @@ Param_Result Param_parseHex(char* str, Param_Value* param) {
  * @return Param_Result
  */
 Param_Result Param_parseNum(char* str, Param_Value* param) {
-    if (Str_indexOf(str, '.') != NULL) {
+    typedef enum {
+        __Ending_f,
+        __Ending_f32,
+    #if PARAM_TYPE_64BIT
+        __Ending_f64,
+    #endif
+        __Ending_i,
+        __Ending_i16,
+        __Ending_i32,
+    #if PARAM_TYPE_64BIT
+        __Ending_i64,
+    #endif
+        __Ending_i8,
+        __Ending_u,
+        __Ending_u16,
+        __Ending_u32,
+    #if PARAM_TYPE_64BIT
+        __Ending_u64,
+    #endif
+        __Ending_u8,
+    } __Ending;
+#define __IMPL_ENDING_NAME(NAME)             [__Ending_ ##NAME] = #NAME
+    static const char* ENDING[] = {
+        __IMPL_ENDING_NAME(u),
+        __IMPL_ENDING_NAME(i),
+        __IMPL_ENDING_NAME(u8),
+        __IMPL_ENDING_NAME(i8),
+        __IMPL_ENDING_NAME(u16),
+        __IMPL_ENDING_NAME(i16),
+        __IMPL_ENDING_NAME(u32),
+        __IMPL_ENDING_NAME(i32),
+    #if PARAM_TYPE_64BIT
+        __IMPL_ENDING_NAME(u64),
+        __IMPL_ENDING_NAME(i64),
+    #endif
+        __IMPL_ENDING_NAME(f),
+        __IMPL_ENDING_NAME(f32),
+    #if PARAM_TYPE_64BIT
+        __IMPL_ENDING_NAME(f64),
+    #endif
+    };
+#define __IMPL_ENDING_TYPE(NAME, TY)             [__Ending_ ##NAME] = Param_ValueType_ ##TY
+    static uint8_t ENDING_TYPE[] = {
+        __IMPL_ENDING_TYPE(u, UNumber),
+        __IMPL_ENDING_TYPE(i, Number),
+        __IMPL_ENDING_TYPE(u8, UInt8),
+        __IMPL_ENDING_TYPE(i8, Int8),
+        __IMPL_ENDING_TYPE(u16, UInt16),
+        __IMPL_ENDING_TYPE(i16, Int16),
+        __IMPL_ENDING_TYPE(u32, UInt32),
+        __IMPL_ENDING_TYPE(i32, Int32),
+    #if PARAM_TYPE_64BIT
+        __IMPL_ENDING_TYPE(u64, UInt64),
+        __IMPL_ENDING_TYPE(i64, Int64),
+    #endif
+        __IMPL_ENDING_TYPE(f, Float),
+        __IMPL_ENDING_TYPE(f32, Float),
+    #if PARAM_TYPE_64BIT
+        __IMPL_ENDING_TYPE(f64, Double),
+        #endif
+    };
+
+    // Try find Ending
+    param->Type = Param_ValueType_Unknown;
+    Str_LenType ending = Str_linearSearch(ENDING, sizeof(ENDING) / sizeof(ENDING[0]), str, Str_endsWith);
+    if (ending >= 0) {
+        // Ending found
+        param->Type = ENDING_TYPE[ending];
+        // Set null at ending
+        str[Str_len(str) - Str_len(ENDING[ending])] = '\0';
+    }
+
+#if PARAM_TYPE_64BIT
+    if (param->Type == Param_ValueType_Double) {
+        return (Param_Result) Str_convertDouble(str, &param->Double);
+    }
+    else
+#endif
+    if (param->Type == Param_ValueType_Float || Str_indexOf(str, '.') != NULL) {
         // it's float
         param->Type = Param_ValueType_Float;
         return (Param_Result) Str_convertFloat(str, &param->Float);
     }
     else {
         // it's number
-        param->Type = Param_ValueType_Number;
-        return (Param_Result) Str_convertNum(str, (int*) &param->Number, Str_Decimal);
+        if (param->Type == Param_ValueType_Unknown) {
+            param->Type = Param_ValueType_Number;
+        }
+        
+    #if PARAM_TYPE_64BIT
+        return (Param_Result) Str_convertLong(str, &param->Number, Str_Decimal);
+    #else
+        return (Param_Result) Str_convertNum(str, &param->Number, Str_Decimal);
+    #endif
     }
 }
 #endif // PARAM_TYPE_NUMBER
@@ -432,26 +525,37 @@ Param_Result Param_parseUnknown(char* str, Param_Value* param) {
  * @return char return 0 if not equal otherwise return 1
  */
 char Param_compareValue(Param_Value* a, Param_Value* b) {
+#define __compareCase(TY) \
+    case Param_ValueType_ ##TY: \
+            return a->TY == b->TY
+
     if (a->Type != b->Type) {
         return 0;
     }
     switch (a->Type) {
-        case Param_ValueType_NumberBinary:
-            return a->NumberBinary == b->NumberBinary;
-        case Param_ValueType_NumberHex:
-            return a->NumberHex == b->NumberHex;
-        case Param_ValueType_Number:
-            return a->Number == b->Number;
-        case Param_ValueType_Float:
-            return a->Float == b->Float;
+        __compareCase(Number);
+        __compareCase(UNumber);
+        __compareCase(NumberHex);
+        __compareCase(NumberBinary);
+        __compareCase(UInt8);
+        __compareCase(Int8);
+        __compareCase(UInt16);
+        __compareCase(Int16);
+        __compareCase(UInt32);
+        __compareCase(Int32);
+    #if PARAM_TYPE_64BIT
+        __compareCase(UInt64);
+        __compareCase(Int64);
+    #endif
+        __compareCase(Float);
+    #if PARAM_TYPE_64BIT
+        __compareCase(Double);
+    #endif
         case Param_ValueType_String:
             return Str_compare(a->String, b->String) == 0;
-        case Param_ValueType_State:
-            return a->State == b->State;
-        case Param_ValueType_StateKey:
-            return a->StateKey == b->StateKey;
-        case Param_ValueType_Boolean:
-            return a->Boolean == b->Boolean;
+        __compareCase(State);
+        __compareCase(StateKey);
+        __compareCase(Boolean);
         case Param_ValueType_Null:
         #if PARAM_COMPARE_NULL_VAL
             return Str_compare(a->Null, b->Null) == 0;
@@ -501,22 +605,73 @@ Str_LenType Param_toStr(char* str, Param_Value* values, Param_LenType len, char*
  * @return Str_LenType
  */
 Str_LenType Param_valueToStr(char* str, Param_Value* value) {
+#define __valueToStrCase32(TY) \
+    case Param_ValueType_ ##TY: \
+        return Str_parseNum(value->TY, Str_Decimal, STR_NORMAL_LEN, str);
+
+#define __valueToStrCase64(TY) \
+    case Param_ValueType_ ##TY: \
+        return Str_parseNum(value->TY, Str_Decimal, STR_NORMAL_LEN, str);
+
     char* pStr;
+
     switch (value->Type) {
+        __valueToStrCase32(Int8);
+        __valueToStrCase32(Int16);
+        __valueToStrCase32(Int32);
+        __valueToStrCase32(UInt8);
+        __valueToStrCase32(UInt16);
+        __valueToStrCase32(UInt32);
+
         case Param_ValueType_Number:
+        #if PARAM_TYPE_64BIT
+            return Str_parseLong(value->Number, Str_Decimal, STR_NORMAL_LEN, str);
+        #else
             return Str_parseNum(value->Number, Str_Decimal, STR_NORMAL_LEN, str);
+        #endif
+
+        case Param_ValueType_UNumber:
+        #if PARAM_TYPE_64BIT
+            return Str_parseULong(value->UNumber, Str_Decimal, STR_NORMAL_LEN, str);
+        #else
+            return Str_parseUNum(value->UNumber, Str_Decimal, STR_NORMAL_LEN, str);
+        #endif
+        
+    #if PARAM_TYPE_64BIT
+        __valueToStrCase64(Int64);
+        __valueToStrCase64(UInt64);
+    #endif
         case Param_ValueType_NumberHex:
             Str_copy(str, PARAM_DEFAULT_HEX);
+        #if PARAM_TYPE_64BIT
+            return Str_parseLong(value->NumberHex, Str_Hex, STR_NORMAL_LEN, str + PARAM_DEFAULT_HEX_LEN) + PARAM_DEFAULT_HEX_LEN;
+        #else
             return Str_parseNum(value->NumberHex, Str_Hex, STR_NORMAL_LEN, str + PARAM_DEFAULT_HEX_LEN) + PARAM_DEFAULT_HEX_LEN;
+        #endif
+            
         case Param_ValueType_NumberBinary:
             Str_copy(str, PARAM_DEFAULT_BIN);
+        #if PARAM_TYPE_64BIT
+            return Str_parseLong(value->NumberBinary, Str_Binary, STR_NORMAL_LEN, str + PARAM_DEFAULT_BIN_LEN) + PARAM_DEFAULT_BIN_LEN;
+        #else
             return Str_parseNum(value->NumberBinary, Str_Binary, STR_NORMAL_LEN, str + PARAM_DEFAULT_BIN_LEN) + PARAM_DEFAULT_BIN_LEN;
+        #endif
+
         case Param_ValueType_Float:
         #if PARAM_FLOAT_DECIMAL_LEN != 0
             return Str_parseFloatFix(value->Float, str, PARAM_FLOAT_DECIMAL_LEN);
         #else
             return Str_parseFloat(value->Float, str);
         #endif
+
+    #if PARAM_TYPE_64BIT
+        case Param_ValueType_Double:
+        #if PARAM_FLOAT_DECIMAL_LEN != 0
+            return Str_parseDoubleFix(value->Double, str, PARAM_FLOAT_DECIMAL_LEN);
+        #else
+            return Str_parseDouble(value->Double, str);
+        #endif
+    #endif
         case Param_ValueType_String:
             pStr = Str_convertString(value->String, str);
             return (Str_LenType)(pStr - str);
