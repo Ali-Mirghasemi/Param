@@ -186,6 +186,14 @@
 #endif // PARAM_SYSTEM_BYTE_ORDER == PARAM_SYSTEM_BYTE_ORDER_AU
 // ----------------------------------------------------------------------------------------------------------
 
+#define PARAM_CHECK_CATEGORY(P, T)                  __PARAM_CHECK_CATEGORY_(P, T)
+#define __PARAM_CHECK_CATEGORY_(P, T)               __PARAM_CHECK_CATEGORY__(P, T)
+#define __PARAM_CHECK_CATEGORY__(P, T)              (((P)->Value.Type & Param_Category_Mask) == Param_Category_ ##T)
+
+#define PARAM_CHECK_VALUETYPE(P, T)                 __PARAM_CHECK_VALUETYPE_(P, T)
+#define __PARAM_CHECK_VALUETYPE_(P, T)              __PARAM_CHECK_VALUETYPE__(P, T)
+#define __PARAM_CHECK_VALUETYPE__(P, T)             (((P)->Value.Type & Param_Category_Mask) == (Param_ValueType_ ##T & Param_Category_Mask))
+
 #define PARAM_VALUETYPE(NAME)                       __PARAM_VALUETYPE_(NAME)
 #define __PARAM_VALUETYPE_(NAME)                    __PARAM_VALUETYPE__(NAME)
 #define __PARAM_VALUETYPE__(NAME)                   __PARAM_VALUETYPE_ ##NAME

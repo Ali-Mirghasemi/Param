@@ -16,8 +16,8 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define PARAM_VER_MAJOR       0
-#define PARAM_VER_MINOR       1
-#define PARAM_VER_FIX         2
+#define PARAM_VER_MINOR       2
+#define PARAM_VER_FIX         0
 
 #include "Str.h"
 #include <stdint.h>
@@ -136,33 +136,45 @@ typedef enum {
     Param_Error,
 } Param_Result;
 /**
+ * @brief Param value category
+ * Each category can have same value if not overflow
+ */
+typedef enum {
+    Param_Category_Number           = 0x00,
+    Param_Category_Boolean          = 0x10,
+    Param_Category_Float            = 0x20,
+    Param_Category_Double           = 0x30,
+    Param_Category_String           = 0x40,
+    Param_Category_Mask             = 0xF0,
+} Param_Category;
+/**
  * @brief show type of param
  */
 typedef enum {
-    Param_ValueType_Unknown         = 0xFF, /**< first character of value not match with any of supported values */
-    Param_ValueType_Null            = 0xFE, /**< ex: null */
-    Param_ValueType_Number          = 0x00, /**< ex: 13 */
-    Param_ValueType_UNumber,                /**< ex: 13u */
-    Param_ValueType_NumberHex,              /**< ex: 0xAB25 */
-    Param_ValueType_NumberBinary,           /**< ex: 0b01100101 */
-    Param_ValueType_UInt8,                  /**< ex: 125u8 */
-    Param_ValueType_Int8,                   /**< ex: 125i8 */
-    Param_ValueType_UInt16,                 /**< ex: 125u16 */
-    Param_ValueType_Int16,                  /**< ex: 125i8 */
-    Param_ValueType_UInt32,                 /**< ex: 125u32 */
-    Param_ValueType_Int32,                  /**< ex: 125i32 */
+    Param_ValueType_Number          = Param_Category_Number,    /**< ex: 13 */
+    Param_ValueType_UNumber,                                    /**< ex: 13u */
+    Param_ValueType_NumberHex,                                  /**< ex: 0xAB25 */
+    Param_ValueType_NumberBinary,                               /**< ex: 0b01100101 */
+    Param_ValueType_UInt8,                                      /**< ex: 125u8 */
+    Param_ValueType_Int8,                                       /**< ex: 125i8 */
+    Param_ValueType_UInt16,                                     /**< ex: 125u16 */
+    Param_ValueType_Int16,                                      /**< ex: 125i8 */
+    Param_ValueType_UInt32,                                     /**< ex: 125u32 */
+    Param_ValueType_Int32,                                      /**< ex: 125i32 */
 #if PARAM_TYPE_64BIT
-    Param_ValueType_UInt64,                 /**< ex: 125u64 */
-    Param_ValueType_Int64,                  /**< ex: 125i64 */
+    Param_ValueType_UInt64,                                     /**< ex: 125u64 */
+    Param_ValueType_Int64,                                      /**< ex: 125i64 */
 #endif
-    Param_ValueType_Float           = 0x10, /**< ex: 2.54f or 2.54 if 64bit variables disabled */
+    Param_ValueType_Boolean          = Param_Category_Boolean,  /**< (true, false), ex: true */    
+    Param_ValueType_State,                                      /**< (high, low), ex: high */
+    Param_ValueType_StateKey,                                   /**< (on, off), ex: off */
+    Param_ValueType_Float           = Param_Category_Float,     /**< ex: 2.54f or 2.54 or 2.54f32 */
 #if PARAM_TYPE_64BIT
-    Param_ValueType_Double,                 /**< ex: 2.54 */
+    Param_ValueType_Double          = Param_Category_Double,    /**< ex: 2.54f64 */
 #endif
-    Param_ValueType_State           = 0x20, /**< (high, low), ex: high */
-    Param_ValueType_StateKey,               /**< (on, off), ex: off */
-    Param_ValueType_Boolean,                /**< (true, false), ex: true */
-    Param_ValueType_String          = 0x30, /**< ex: "Text" */
+    Param_ValueType_String          = Param_Category_String,    /**< ex: "Text" */
+    Param_ValueType_Null,                                       /**< ex: null */
+    Param_ValueType_Unknown,                                    /**< first character of value not match with any of supported values */
 } Param_ValueType;
 /**
  * @brief hold type of param in same memory
