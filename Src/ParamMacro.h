@@ -188,11 +188,11 @@
 
 #define PARAM_CHECK_CATEGORY(P, T)                  __PARAM_CHECK_CATEGORY_(P, T)
 #define __PARAM_CHECK_CATEGORY_(P, T)               __PARAM_CHECK_CATEGORY__(P, T)
-#define __PARAM_CHECK_CATEGORY__(P, T)              (((P)->Value.Type & Param_Category_Mask) == Param_Category_ ##T)
+#define __PARAM_CHECK_CATEGORY__(P, T)              (((uint8_t) (P)->Value.Type & (uint8_t) Param_Category_Mask) == (uint8_t) Param_Category_ ##T)
 
 #define PARAM_CHECK_VALUETYPE(P, T)                 __PARAM_CHECK_VALUETYPE_(P, T)
 #define __PARAM_CHECK_VALUETYPE_(P, T)              __PARAM_CHECK_VALUETYPE__(P, T)
-#define __PARAM_CHECK_VALUETYPE__(P, T)             (((P)->Value.Type & Param_Category_Mask) == (Param_ValueType_ ##T & Param_Category_Mask))
+#define __PARAM_CHECK_VALUETYPE__(P, T)             (((uint8_t) (P)->Value.Type & (uint8_t) Param_Category_Mask) == ((uint8_t) Param_ValueType_ ##T & (uint8_t) Param_Category_Mask))
 
 #define PARAM_VALUETYPE(NAME)                       __PARAM_VALUETYPE_(NAME)
 #define __PARAM_VALUETYPE_(NAME)                    __PARAM_VALUETYPE__(NAME)
