@@ -268,6 +268,13 @@ Test_Result Test_2(void) {
     setValue(4, Float, 2.45);
     assert(Param, BUFF, values, 4);
 
+    Str_copy(BUFF, ", \"\"");
+    Str_copy(TEMP1, "");
+    Str_copy(TEMP2, "");
+    setValue(0, Unknown, TEMP1);
+    setValue(1, String,  TEMP2);
+    assert(Param, BUFF, values, 2);
+
     return 0;
 }
 
